@@ -1,12 +1,12 @@
-# Docs for the Azure Web Apps Deploy action: https://github.com/Azure/webapps-deploy
-# More GitHub Actions for Azure: https://github.com/Azure/actions
+# Docs for the Azure Web Apps Deploy action:
+# https://github.com/Azure/webapps-deploy
 
-name: Build and deploy Node.js app to Azure Web App - app-react-practica5
+name: Build and deploy React app to Azure Web App - app-react-practica5
 
 on:
   push:
     branches:
-      - 'main'
+      - main
   workflow_dispatch:
 
 jobs:
@@ -17,33 +17,41 @@ jobs:
       contents: read
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      - name: Set up Node.js version
-        uses: actions/setup-node@v3
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
         with:
           node-version: '22.x'
+          cache: 'npm'
+          cache-dependency-path: practica5react/package-lock.json
 
-      - name: npm install, build, and test
+      - name: Install dependencies
         working-directory: ./practica5react
-        run: |
-          npm install
-          npm run build
-          npm run test --if-present
+        run: npm ci
+
+      - name: Build React application
+        working-directory: ./practica5react
+        run: npm run build
 
       - name: Prepare deployment package
         run: |
-          mkdir -p deploy
+          rm -rf deploy
+          mkdir deploy
           cp practica5react/package.json deploy/
           cp practica5react/package-lock.json deploy/
           cp practica5react/server.js deploy/
           cp -r practica5react/dist deploy/
 
-      - name: Upload artifact for deployment job
+          echo "=== CONTENIDO DEL PAQUETE ==="
+          find deploy -maxdepth 3 -type f | sort
+
+      - name: Upload deployment package
         uses: actions/upload-artifact@v4
         with:
           name: node-app
-          path: deploy
+          path: deploy/
 
   deploy:
     runs-on: ubuntu-latest
@@ -54,10 +62,16 @@ jobs:
       contents: read
 
     steps:
-      - name: Download artifact from build job
+      - name: Download deployment package
         uses: actions/download-artifact@v4
         with:
           name: node-app
+          path: ./deploy
+
+      - name: Show deployment files
+        run: |
+          echo "=== ARCHIVOS QUE SE VAN A DESPLEGAR ==="
+          find ./deploy -maxdepth 3 -type f | sort
 
       - name: Login to Azure
         uses: azure/login@v2
@@ -66,14 +80,9 @@ jobs:
           tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_5FEE7071F1E84D41A0687E6CCA43C6EE }}
           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_E68982293DFC4B9BA3FD1E79E1E841E5 }}
 
-      - name: Install production dependencies
-        run: |
-          npm install --omit=dev
-
       - name: Deploy to Azure Web App
-        id: deploy-to-webapp
         uses: azure/webapps-deploy@v3
         with:
-          app-name: 'app-react-practica5'
-          slot-name: 'Production'
-          package: .
+          app-name: app-react-practica5
+          slot-name: Production
+          package: ./deploy
