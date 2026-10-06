@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="Practica5React/practica5react.esproj">
+    <Build />
+    <Deploy />
+  </Project>
+</Solution>
