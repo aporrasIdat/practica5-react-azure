@@ -12,8 +12,9 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+
     permissions:
-      contents: read #This is required for actions/checkout
+      contents: read
 
     steps:
       - uses: actions/checkout@v4
@@ -22,7 +23,7 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: '22.x'
-          
+
       - name: npm install, build, and test
         working-directory: ./practica5react
         run: |
@@ -30,25 +31,34 @@ jobs:
           npm run build
           npm run test --if-present
 
+      - name: Prepare deployment package
+        run: |
+          mkdir -p deploy
+          cp practica5react/package.json deploy/
+          cp practica5react/package-lock.json deploy/
+          cp practica5react/server.js deploy/
+          cp -r practica5react/dist deploy/
+
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
         with:
           name: node-app
-          path: ./practica5react/dist
+          path: deploy
 
   deploy:
     runs-on: ubuntu-latest
     needs: build
+
     permissions:
-      id-token: write #This is required for requesting the JWT
-      contents: read #This is required for actions/checkout
+      id-token: write
+      contents: read
 
     steps:
       - name: Download artifact from build job
         uses: actions/download-artifact@v4
         with:
           name: node-app
-      
+
       - name: Login to Azure
         uses: azure/login@v2
         with:
@@ -56,11 +66,14 @@ jobs:
           tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_5FEE7071F1E84D41A0687E6CCA43C6EE }}
           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_E68982293DFC4B9BA3FD1E79E1E841E5 }}
 
-      - name: 'Deploy to Azure Web App'
+      - name: Install production dependencies
+        run: |
+          npm install --omit=dev
+
+      - name: Deploy to Azure Web App
         id: deploy-to-webapp
         uses: azure/webapps-deploy@v3
         with:
           app-name: 'app-react-practica5'
           slot-name: 'Production'
           package: .
-          
