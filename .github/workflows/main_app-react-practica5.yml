@@ -37,15 +37,11 @@ jobs:
 
       - name: Prepare deployment package
         run: |
-          rm -rf deploy
           mkdir deploy
           cp practica5react/package.json deploy/
           cp practica5react/package-lock.json deploy/
           cp practica5react/server.js deploy/
           cp -r practica5react/dist deploy/
-
-          echo "=== CONTENIDO DEL PAQUETE ==="
-          find deploy -maxdepth 3 -type f | sort
 
       - name: Upload deployment package
         uses: actions/upload-artifact@v4
@@ -70,7 +66,6 @@ jobs:
 
       - name: Show deployment files
         run: |
-          echo "=== ARCHIVOS QUE SE VAN A DESPLEGAR ==="
           find ./deploy -maxdepth 3 -type f | sort
 
       - name: Login to Azure
